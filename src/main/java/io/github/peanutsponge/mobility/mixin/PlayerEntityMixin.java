@@ -15,6 +15,7 @@ import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import static io.github.peanutsponge.mobility.MobilityConfig.*;
 
@@ -25,6 +26,15 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     protected PlayerEntityMixin(EntityType<? extends LivingEntity> entityType, World world) {
         super(entityType, world);
     }
+//	@Override
+//	private Vec3d adjustMovementForCollisions(Vec3d movement){
+//		boolean onGround = this.isOnGround();
+//		this.setOnGround(true);
+//		Vec3d adjustedMovementForCollisions = super.adjustMovementForCollisions(movement);
+//		this.setOnGround(onGround);
+//		return adjustedMovementForCollisions;
+//	}
+
     @Unique
     private Vec3d velocity;
 
@@ -35,9 +45,11 @@ public abstract class PlayerEntityMixin extends LivingEntity {
         velocity = new Vec3d(velocity.x, (double)this.getJumpVelocity(), velocity.z);
         float f = this.getYaw() * 0.017453292F;
         if (this.isSprinting())
-            this.velocity = this.velocity.add((double)(-MathHelper.sin(f) * sprintJumpHorizontalVelocityMultiplier), 0.0, (double)(MathHelper.cos(f) * sprintJumpHorizontalVelocityMultiplier));
+            this.velocity = this.velocity.add((double)(-MathHelper.sin(f) * sprintJumpHorizontalVelocityMultiplier),
+				0.0, (double)(MathHelper.cos(f) * sprintJumpHorizontalVelocityMultiplier));
         else
-            this.velocity = this.velocity.add((double)(-MathHelper.sin(f) * jumpHorizontalVelocityMultiplier), 0.0, (double)(MathHelper.cos(f) * jumpHorizontalVelocityMultiplier));
+            this.velocity = this.velocity.add((double)(-MathHelper.sin(f) * jumpHorizontalVelocityMultiplier),
+				0.0, (double)(MathHelper.cos(f) * jumpHorizontalVelocityMultiplier));
         System.out.println("add: " + this.velocity);
 
     }
@@ -67,4 +79,14 @@ public abstract class PlayerEntityMixin extends LivingEntity {
     @Final
     @Shadow
     private PlayerAbilities abilities;
-    }
+
+	@Override
+	public boolean hasNoDrag() {
+		return !hasDrag;
+	}
+	@Override
+	public boolean hasNoGravity() {
+		return !hasGravity;
+	}
+
+}
