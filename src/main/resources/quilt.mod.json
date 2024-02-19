@@ -20,7 +20,8 @@
 		},
 		"intermediate_mappings": "net.fabricmc:intermediary",
 		"entrypoints": {
-			"init": "io.github.peanutsponge.mobility.MobilityMod"
+			"init": "io.github.peanutsponge.mobility.MobilityMod",
+			"client_events": "io.github.peanutsponge.mobility.CoyoteTime"
 		},
 		"depends": [
 			{
