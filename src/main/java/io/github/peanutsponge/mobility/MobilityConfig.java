@@ -2,6 +2,9 @@ package io.github.peanutsponge.mobility;
 import eu.midnightdust.lib.config.MidnightConfig;
 
 public class MobilityConfig extends MidnightConfig{
+	@Entry(category = "Walk Settings") public static boolean onlyPlayersCanClimb = false;
+	@Entry(category = "Walk Settings") public static boolean climbOnAllBlocks = false;
+	@Entry(category = "Walk Settings") public static boolean forwardToClimb = true;
 	@Entry(category = "Walk Settings") public static boolean alwaysSprint = false;
 	@Entry(category = "Walk Settings") public static boolean hasDrag = true;
 	@Entry(category = "Walk Settings") public static boolean hasGravity = true;
@@ -17,7 +20,7 @@ public class MobilityConfig extends MidnightConfig{
 	@Entry(category = "Jump Settings") public static int coyoteTime = 10;
 
 	@Entry(category = "Jump Settings") public static boolean smoothJumps = false;
-	@Entry(category = "Jump Settings") public static float jumpHorizontalVelocityMultiplier = 0.2F;
-	@Entry(category = "Jump Settings") public static float sprintJumpHorizontalVelocityMultiplier = 0.0F;
+	@Entry(category = "Jump Settings") public static float jumpHorizontalVelocityMultiplier = 0.0F;
+	@Entry(category = "Jump Settings") public static float sprintJumpHorizontalVelocityMultiplier = 0.2F;
 
 }

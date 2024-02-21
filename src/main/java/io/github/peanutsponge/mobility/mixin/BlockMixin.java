@@ -40,7 +40,7 @@ public abstract class BlockMixin extends AbstractBlock {
 
 	@Unique
 	private boolean isSliding(BlockState state, World world,BlockPos pos, Entity entity) {
-		if (this.collidable){
+		if (!this.collidable){
 			return false;
 //		} else if (this.isSideSolid()) {
 //
@@ -54,13 +54,12 @@ public abstract class BlockMixin extends AbstractBlock {
 		}
 		else if (entity.getVelocity().y >= -0.08) {
 			return false;}
-//		else {
-//			double d = Math.abs((double)pos.getX() + 0.5 - entity.getX());
-//			double e = Math.abs((double)pos.getZ() + 0.5 - entity.getZ());
-//			double f = 0.4375 + (double)(entity.getWidth() / 2.0F);
-//			return d + 1.0E-7 > f || e + 1.0E-7 > f;
-//		}
-		return true;
+		else {
+			double d = Math.abs((double)pos.getX() + 0.5 - entity.getX());
+			double e = Math.abs((double)pos.getZ() + 0.5 - entity.getZ());
+			double f = 0.4375 + (double)(entity.getWidth() / 2.0F);
+			return d + 1.0E-7 > f || e + 1.0E-7 > f;
+		}
 	}
 
 	@Unique
