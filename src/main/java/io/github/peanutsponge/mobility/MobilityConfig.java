@@ -21,7 +21,7 @@ public class MobilityConfig extends MidnightConfig{
 	@Entry(category = "Jumping") public static float sprintJumpHorizontalVelocityMultiplier = 0.2F;
 
 	// Jump Settings
-	@Entry(category = "Wall") public static boolean climbOnAllBlocks = false;
+	@Entry(category = "Wall") public static boolean wallSliding = false;
 	@Entry(category = "Wall") public static boolean forwardToClimb = true;
 
 	// Experimental Settings

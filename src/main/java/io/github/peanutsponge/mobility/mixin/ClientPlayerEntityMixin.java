@@ -5,15 +5,12 @@ import net.minecraft.block.*;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
-import net.minecraft.entity.player.PlayerAbilities;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
@@ -33,32 +30,26 @@ import static io.github.peanutsponge.mobility.MobilityConfig.*;
 @Mixin(value = ClientPlayerEntity.class)
 public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 
-	@Unique
-	private Optional<BlockPos> climbingPos;
-
-    @Unique
-    private Vec3d velocity;
-
 	public ClientPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
 		super(world, pos, yaw, gameProfile);
 	}
-
+	/**
+	 * Executes a jump.
+	 * Edited s.t. variables can be configured
+	 */
 	@Override
 	public void jump(){
-        this.velocity = this.getVelocity();
-        System.out.println("get: " + this.velocity);
+		Vec3d velocity = this.getVelocity();
         velocity = new Vec3d(velocity.x, (double)this.getJumpVelocity(), velocity.z);
         float f = this.getYaw() * 0.017453292F;
         if (this.isSprinting())
-            this.velocity = this.velocity.add((double)(-MathHelper.sin(f) * sprintJumpHorizontalVelocityMultiplier),
+            velocity = velocity.add((double)(-MathHelper.sin(f) * sprintJumpHorizontalVelocityMultiplier),
 				0.0, (double)(MathHelper.cos(f) * sprintJumpHorizontalVelocityMultiplier));
         else
-            this.velocity = this.velocity.add((double)(-MathHelper.sin(f) * jumpHorizontalVelocityMultiplier),
+            velocity = velocity.add((double)(-MathHelper.sin(f) * jumpHorizontalVelocityMultiplier),
 				0.0, (double)(MathHelper.cos(f) * jumpHorizontalVelocityMultiplier));
-        System.out.println("add: " + this.velocity);
 		super.jump();
-        System.out.println("set: "+ this.velocity);
-        this.setVelocity(this.velocity);
+        this.setVelocity(velocity);
         this.velocityDirty = true;
     }
     @Override
@@ -68,15 +59,11 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 
 
 	@Shadow private boolean canSprint(){return true;}
-	@Shadow private boolean canVehicleSprint(Entity entity){return true;}
-
-	@Shadow
-	 private boolean canStartSprinting() {
-		 return !this.isSprinting() && this.isWalking() && this.canSprint() && !this.isUsingItem() && !this.hasStatusEffect(StatusEffects.BLINDNESS) && (!this.hasVehicle() || this.canVehicleSprint(this.getVehicle())) && !this.isFallFlying();
-	 }
-	 @Shadow public Input input;
+	@Shadow private boolean canStartSprinting() {return true;}
+	@Shadow public Input input;
 
 	/**
+	 * Allows sideways sprinting
 	 * @author peanutsponge
 	 * @reason simplest implementation
 	 */
@@ -98,26 +85,13 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
         this.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue((double) this.getAbilities().getWalkSpeed());
 		super.travel(movementInput);
     }
-	@Unique
-	private boolean blockSprintingBlock = false;
-	@Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 2))
-	private void removeSprintingLogic(CallbackInfo info) {
-		System.out.println("2: blockSprintingBlock" + this.blockSprintingBlock);
-		System.out.println("2: walkcan" + this.isWalking() + this.canSprint());
-		this.blockSprintingBlock = this.isWalking() && this.canSprint();
-		System.out.println("2: blockSprintingBlock" + this.blockSprintingBlock);
-	}
-	@Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 3))
-	private void removeSprintingLogic2(CallbackInfo info) {
-		System.out.println("3 : blockSprintingBlock" + this.blockSprintingBlock);
-		System.out.println("3: walkcan" + this.isWalking() + this.canSprint());
-		this.blockSprintingBlock = this.isWalking() && this.canSprint();
-		System.out.println("3 : blockSprintingBlock" + this.blockSprintingBlock);
-	}
-
+	/**
+	 * Sets sprinting to boolean.
+	 * Edited s.t. sprinting multiplier can be configured.
+	 * Edited s.t. sprint loss on collision is removed and sideways sprinting is possible.
+	 */
 	@Override
 	public void setSprinting(boolean sprinting) {
-		System.out.println("sprinting: " + sprinting + "blockSprintingBlock" + this.blockSprintingBlock);
 		if (this.blockSprintingBlock) {
 			this.blockSprintingBlock = false;
 			return;
@@ -130,85 +104,112 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 			entityAttributeInstance.addTemporaryModifier(SPRINTING_SPEED_BOOST);
 		}
 	}
-
-
-	private boolean canClimbTrapdoor(BlockPos pos, BlockState state) {
-		if ((Boolean)state.get(TrapdoorBlock.OPEN)) {
-			BlockState blockState = this.getWorld().getBlockState(pos.down());
-			if (blockState.isOf(Blocks.LADDER) && blockState.get(LadderBlock.FACING) == state.get(TrapdoorBlock.FACING)) {
-				return true;
-			}
-		}
-		return false;
+	@Unique
+	private boolean blockSprintingBlock = false;
+	@Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 2))
+	private void removeSprintingLogic(CallbackInfo info) {
+		this.blockSprintingBlock = this.isWalking() && this.canSprint();
+	}
+	@Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 3))
+	private void removeSprintingLogic2(CallbackInfo info) {
+		this.blockSprintingBlock = this.isWalking() && this.canSprint();
 	}
 
-	@Override
-	public boolean isClimbing() {
-		if (this.isSpectator()||(!forwardToClimb && this.isOnGround())) {
-				return false;
-			}
 
-		BlockPos blockPos = this.getBlockPos();
-		BlockState blockState = this.getBlockStateAtPos();
-		if (blockState.isIn(BlockTags.CLIMBABLE) || (blockState.getBlock() instanceof TrapdoorBlock && this.canClimbTrapdoor(blockPos, blockState))){
-			this.climbingPos = Optional.of(blockPos);
-			return true;
-		} else if (climbOnAllBlocks){
-			World world = this.getWorld();
-			double dx = (double)blockPos.getX() + 0.5 - this.getX();
-			double dz = (double)blockPos.getZ() + 0.5 - this.getZ();
-			double threshold = (double)(this.getWidth() / 2.0F) - 0.1F - 1.0E-7;
-			if ((world.isDirectionSolid( blockPos.east(),this, Direction.WEST) && -dx > threshold)||
-				(world.isDirectionSolid( blockPos.west(),this, Direction.EAST) && dx > threshold) ||
-				(world.isDirectionSolid( blockPos.north(),this, Direction.SOUTH) && dz > threshold)||
-				(world.isDirectionSolid( blockPos.south(),this, Direction.NORTH) && -dz > threshold)){
-				this.climbingPos = Optional.of(blockPos);
-				return true;
-			}
-		}
-		return false;
-	}
-	//used in fall damage calculations
-	@Override
-	public Optional<BlockPos> getClimbingPos() {
-		if (this.climbingPos.isEmpty())
-			return super.getClimbingPos();
-		return this.climbingPos;
-	}
+
+	/**
+	 * Overrides the default friction behavior to add wall sliding.
+	 */
 	@Override
 	public Vec3d handleFrictionAndCalculateMovement(Vec3d movementInput, float slipperiness) {
 		this.updateVelocity(this.getMovementSpeed(slipperiness), movementInput);
-		this.setVelocity(this.applyClimbingSpeed(this.getVelocity()));
+		if (this.isClimbing()){
+			this.setVelocity(this.applyClimbingSpeed(this.getVelocity()));
+		} else if (this.isSliding()){
+			this.setVelocity(this.applySlidingSpeed(this.getVelocity()));
+		}
+
 		this.move(MovementType.SELF, this.getVelocity());
 		Vec3d vec3d = this.getVelocity();
-		if ((this.jumping) && (this.isClimbing() || this.getBlockStateAtPos().isOf(Blocks.POWDER_SNOW) && PowderSnowBlock.canWalkOnPowderSnow(this))) {
-			vec3d = new Vec3d(vec3d.x, 0.2, vec3d.z);
-		}
 
 		return vec3d;
 	}
-	@Unique
-	private Vec3d applyClimbingSpeed(Vec3d motion) {
-		if (this.isClimbing()) {
-			this.resetFallDistance();
-			float f = 0.15F;
-			double d = MathHelper.clamp(motion.x, -0.15000000596046448, 0.15000000596046448);
-			double e = MathHelper.clamp(motion.z, -0.15000000596046448, 0.15000000596046448);
-			double g = Math.max(motion.y, -0.15000000596046448);
-			if (g < 0.0 && !this.getBlockStateAtPos().isOf(Blocks.SCAFFOLDING) && this.isHoldingOntoLadder() && this instanceof PlayerEntity) {
-				g = 0.0;
-			}
 
-			motion = new Vec3d(d, g, e);
+	@Unique
+	private Vec3d applySlidingSpeed(Vec3d motion) {
+		this.resetFallDistance();
+		float f = 0.15000000596046448F;
+		double motionX = motion.x;
+		double motionZ = motion.z;
+		double motionY = Math.max(motion.y, -f);
+		if (this.isSliding()){
+			if ((this.jumping)) {
+				motionY = 0.2;;
+			}
+		}
+		if (motionY < 0.0 && this.isHoldingOntoLadder()) {
+			motionY = 0.0;
 		}
 
+		motion = new Vec3d(motionX, motionY, motionZ);
+
 		return motion;
+	}
+	@Unique
+	private Vec3d applyClimbingSpeed(Vec3d motion) {
+		this.resetFallDistance();
+		float climbingSpeed = 0.15000000596046448F;
+		double d = MathHelper.clamp(motion.x, -climbingSpeed, climbingSpeed);
+		double e = MathHelper.clamp(motion.z, -climbingSpeed, climbingSpeed);
+		double g = Math.max(motion.y, -climbingSpeed);
+		if ((this.horizontalCollision || this.jumping) && (this.isClimbing() || this.getBlockStateAtPos().isOf(Blocks.POWDER_SNOW) && PowderSnowBlock.canWalkOnPowderSnow(this))) {
+			g = 0.2;
+		} else if (g < 0.0 && !this.getBlockStateAtPos().isOf(Blocks.SCAFFOLDING) && this.isHoldingOntoLadder()) {
+			g = 0.0;
+		}
+
+		motion = new Vec3d(d, g, e);
+		return motion;
+	}
+	@Unique
+	public boolean isSliding() {
+		if (!wallSliding||this.isSpectator()||(this.isOnGround())) {
+			return false;
+		}
+		BlockPos blockPos = this.getBlockPos();
+		World world = this.getWorld();
+		double dx = (double)blockPos.getX() + 0.5 - this.getX();
+		double dz = (double)blockPos.getZ() + 0.5 - this.getZ();
+		double threshold = (double)(this.getWidth() / 2.0F) - 0.1F - 1.0E-7;
+		if ((world.isDirectionSolid( blockPos.east(),this, Direction.WEST) && -dx > threshold)||
+			(world.isDirectionSolid( blockPos.west(),this, Direction.EAST) && dx > threshold) ||
+			(world.isDirectionSolid( blockPos.north(),this, Direction.SOUTH) && dz > threshold)||
+			(world.isDirectionSolid( blockPos.south(),this, Direction.NORTH) && -dz > threshold)){
+			this.slidingPos = Optional.of(blockPos);
+			this.resetFallDistance();
+			return true;
+		}
+		return false;
+	}
+	/**
+	 * Used in fall damage calculations, probably currently broken
+	 */
+	@Unique
+	private Optional<BlockPos> slidingPos;
+	@Override
+	public Optional<BlockPos> getClimbingPos() {
+		if (this.slidingPos.isEmpty())
+			return super.getClimbingPos();
+		return this.slidingPos;
 	}
 
 	@Unique
 	private float getMovementSpeed(float slipperiness) {
 		return this.isOnGround() ? this.getMovementSpeed() * (0.21600002F / (slipperiness * slipperiness * slipperiness)) : this.getAirSpeed();
 	}
+	/**
+	 * Experimental settings
+	 */
 	@Override
 	public boolean hasNoDrag() {
 		return !hasDrag;
