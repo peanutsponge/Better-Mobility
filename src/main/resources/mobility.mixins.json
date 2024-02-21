@@ -6,8 +6,7 @@
   "mixins": [
     "BoatEntityMixin",
     "ClientPlayerEntityMixin",
-    "EntityMixin",
-    "LivingEntityMixin"
+    "EntityMixin"
   ],
   "client": [
   ],
