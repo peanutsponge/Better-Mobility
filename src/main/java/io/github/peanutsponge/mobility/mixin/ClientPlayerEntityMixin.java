@@ -11,10 +11,7 @@ import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
@@ -61,6 +58,9 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 	@Shadow private boolean canSprint(){return true;}
 	@Shadow private boolean canStartSprinting() {return true;}
 	@Shadow public Input input;
+
+	@Shadow
+	public abstract float getYaw(float tickDelta);
 
 	/**
 	 * Allows sideways sprinting
@@ -123,38 +123,79 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 	@Override
 	public Vec3d handleFrictionAndCalculateMovement(Vec3d movementInput, float slipperiness) {
 		this.updateVelocity(this.getMovementSpeed(slipperiness), movementInput);
-		if (this.isClimbing()){
+
+		if (this.isClimbing())
 			this.setVelocity(this.applyClimbingSpeed(this.getVelocity()));
-		} else if (this.isSliding()){
+
+		else if (wallSliding && !this.isSpectator() && !this.isOnGround())
 			this.setVelocity(this.applySlidingSpeed(this.getVelocity()));
-		}
 
 		this.move(MovementType.SELF, this.getVelocity());
-		Vec3d vec3d = this.getVelocity();
 
-		return vec3d;
+		return this.getVelocity();
 	}
 
 	@Unique
 	private Vec3d applySlidingSpeed(Vec3d motion) {
+		BlockPos blockPos = this.getBlockPos();
+		World world = this.getWorld();
+		double dx = (double)blockPos.getX() + 0.5 - this.getX();
+		double dz = (double)blockPos.getZ() + 0.5 - this.getZ();
+		double threshold = (double)(this.getWidth() / 2.0F) - 0.1F - 1.0E-7;
+
+		float lookAngle = this.getYaw();
+		Direction wallDirection;
+		if (world.isDirectionSolid( blockPos.east(),this, Direction.WEST) && -dx > threshold) {
+			lookAngle += 90.0F;
+			wallDirection = Direction.EAST;
+		}
+		else if	(world.isDirectionSolid( blockPos.west(),this, Direction.EAST) && dx > threshold) {
+			lookAngle -= 90.0F;
+			wallDirection = Direction.WEST;
+		}
+		else if	(world.isDirectionSolid( blockPos.north(),this, Direction.SOUTH) && dz > threshold) {
+			lookAngle += 180.0F;
+			wallDirection = Direction.NORTH;
+		}
+		else if (world.isDirectionSolid( blockPos.south(),this, Direction.NORTH) && -dz > threshold) {
+			wallDirection = Direction.SOUTH;
+		} else
+			return motion;
+
+		lookAngle += 360.0F;
+		lookAngle %= 360.0F;
+		lookAngle -= 180.0F;
+		lookAngle = Math.abs(lookAngle);
+		lookAngle = 180.0F - lookAngle;
+
 		this.resetFallDistance();
-		float f = 0.15000000596046448F;
-		double motionX = motion.x;
-		double motionZ = motion.z;
-		double motionY = Math.max(motion.y, -f);
-		if (this.isSliding()){
-			if ((this.jumping)) {
-				motionY = 0.2;;
+		double motionX = MathHelper.clamp(motion.x, -slidingSpeed, slidingSpeed);
+		double motionZ = MathHelper.clamp(motion.z, -slidingSpeed, slidingSpeed);
+		double motionY = Math.max(motion.y, -slidingSpeed);
+
+		if ((this.input.hasForwardMovement())) {
+			if (lookAngle < 45) { // Climbing
+				System.out.println("CLIMB");
+				motionY = slidingSpeed;
+				motionX = MathHelper.clamp(motion.x, -slidingSpeed, slidingSpeed);
+				motionZ = MathHelper.clamp(motion.z, -slidingSpeed, slidingSpeed);
+			} else if (lookAngle < 90) { // Wall running
+				motionY = 0.0;
+				motionX = motion.x;
+				motionZ = motion.z;
+				if (this.input.jumping) {
+					System.out.println("JUMP");
+					this.jump();
+				}
 			}
 		}
-		if (motionY < 0.0 && this.isHoldingOntoLadder()) {
+		if (motionY < 0.0 && this.isHoldingOntoLadder()) { //Shifting
 			motionY = 0.0;
 		}
 
-		motion = new Vec3d(motionX, motionY, motionZ);
-
-		return motion;
+		return new Vec3d(motionX, motionY, motionZ);
 	}
+
 	@Unique
 	private Vec3d applyClimbingSpeed(Vec3d motion) {
 		this.resetFallDistance();
@@ -171,26 +212,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 		motion = new Vec3d(d, g, e);
 		return motion;
 	}
-	@Unique
-	public boolean isSliding() {
-		if (!wallSliding||this.isSpectator()||(this.isOnGround())) {
-			return false;
-		}
-		BlockPos blockPos = this.getBlockPos();
-		World world = this.getWorld();
-		double dx = (double)blockPos.getX() + 0.5 - this.getX();
-		double dz = (double)blockPos.getZ() + 0.5 - this.getZ();
-		double threshold = (double)(this.getWidth() / 2.0F) - 0.1F - 1.0E-7;
-		if ((world.isDirectionSolid( blockPos.east(),this, Direction.WEST) && -dx > threshold)||
-			(world.isDirectionSolid( blockPos.west(),this, Direction.EAST) && dx > threshold) ||
-			(world.isDirectionSolid( blockPos.north(),this, Direction.SOUTH) && dz > threshold)||
-			(world.isDirectionSolid( blockPos.south(),this, Direction.NORTH) && -dz > threshold)){
-			this.slidingPos = Optional.of(blockPos);
-			this.resetFallDistance();
-			return true;
-		}
-		return false;
-	}
+
 	/**
 	 * Used in fall damage calculations, probably currently broken
 	 */

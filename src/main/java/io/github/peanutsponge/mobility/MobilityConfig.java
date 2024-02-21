@@ -22,7 +22,8 @@ public class MobilityConfig extends MidnightConfig{
 
 	// Jump Settings
 	@Entry(category = "Wall") public static boolean wallSliding = false;
-	@Entry(category = "Wall") public static boolean forwardToClimb = true;
+//	@Entry(category = "Wall") public static boolean forwardToClimb = true;
+	@Entry(category = "Wall") public static float slidingSpeed = 0.05F;
 
 	// Experimental Settings
 	@Entry(category = "Experimental") public static float boatStepHeight = 0.0F;
