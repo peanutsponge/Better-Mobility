@@ -4,12 +4,10 @@ import com.mojang.authlib.GameProfile;
 import net.minecraft.block.*;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.entity.Entity;
 import net.minecraft.entity.MovementType;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
-import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.util.math.*;
 import net.minecraft.world.World;
@@ -130,70 +128,87 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 		if (this.isClimbing())
 			this.setVelocity(this.applyClimbingSpeed(this.getVelocity()));
 
-		else if (wallSliding && !this.isSpectator() && !this.isOnGround())
+		else if (wallMovement && !this.isSpectator() && !this.isOnGround())
 			this.setVelocity(this.applySlidingSpeed(this.getVelocity()));
 
 		this.move(MovementType.SELF, this.getVelocity());
 
 		return this.getVelocity();
 	}
-
+	@Unique private boolean isWallMoving = false;
 	@Unique
 	private Vec3d applySlidingSpeed(Vec3d motion) {
-		if (!this.input.jumping) // add logic for when they let go of jump
-			return motion;
-
-		BlockPos blockPos = this.getBlockPos();
+		BlockPos blockPos = this.getBlockPos().up();
 		World world = this.getWorld();
 		double dx = (double)blockPos.getX() + 0.5 - this.getX();
 		double dz = (double)blockPos.getZ() + 0.5 - this.getZ();
-		double threshold = (double)(this.getWidth() / 2.0F) - 0.2F - 1.0E-7;
+		double threshold = (double)(this.getWidth() / 2.0F) - 0.1F - wallDistance - 1.0E-7;
 
 		boolean east = (world.isDirectionSolid( blockPos.east(),this, Direction.WEST) && -dx > threshold);
 		boolean west = (world.isDirectionSolid( blockPos.west(),this, Direction.EAST) && dx > threshold);
 		boolean north = (world.isDirectionSolid( blockPos.north(),this, Direction.SOUTH) && dz > threshold);
 		boolean south = (world.isDirectionSolid( blockPos.south(),this, Direction.NORTH) && -dz > threshold);
 		int wallsTouching = (east?1:0)+(west?1:0)+(north?1:0)+(south?1:0);
-		if (wallsTouching == 0)
-			return motion;
 
-
-		float yaw = this.getYaw();
-		float pitch = this.getPitch() * -1;
-		System.out.println("yaw_raw: " + yaw);
-		yaw += (90.0F * ((east?1:0)-(west?1:0) + (north?2:0)) / wallsTouching);
-		System.out.println("yaw_adjust: " + yaw);
-		yaw += 360.0F;
-		yaw %= 360.0F;
-		yaw -= 180.0F;
-		yaw = Math.abs(yaw);
-		yaw = 180.0F - yaw;
-		System.out.println("yaw_wrapped: " + yaw);
 
 		double motionX = motion.x;
 		double motionZ = motion.z;
 		double motionY = motion.y;
 
+		if (!this.input.jumping || wallsTouching == 0) {
+			if (this.isWallMoving && wallJumping){// logic for when they let go of jump
+				this.isWallMoving = false;
+				float f = this.getYaw() * 0.017453292F;
+				if (this.isSprinting()) {
+					motionX += -MathHelper.sin(f) * sprintJumpHorizontalVelocityMultiplier;
+					motionZ += MathHelper.cos(f) * sprintJumpHorizontalVelocityMultiplier;
+				} else{
+					motionX += -MathHelper.sin(f) * jumpHorizontalVelocityMultiplier;
+					motionZ += MathHelper.cos(f) * jumpHorizontalVelocityMultiplier;
+				}
+				motionY += this.getJumpVelocity();
+				motionX *= ((north?-1:1)*(south?-1:1));
+				motionZ *= ((east?-1:1)*(west?-1:1));
+				return new Vec3d(motionX, motionY, motionZ);
+			}
+			this.isWallMoving = false;
+			return motion;
+		}
+		this.isWallMoving = true;
+
+
+
+
+		float yaw = this.getYaw();
+		float pitch = this.getPitch() * -1;
+		yaw += (90.0F * ((east?1:0)-(west?1:0) + (north?(east?2:-2):0)) / wallsTouching);
+		System.out.println("yaw_adjust: " + yaw);
+		yaw = MathHelper.wrapDegrees(yaw);
+		System.out.println("yaw_wrapped: " + yaw);
+		yaw = Math.abs(yaw);
+		System.out.println("yaw_abs: " + yaw);
+
+
 		motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);
 		motionZ = MathHelper.clamp(motionZ, -translationSpeed, translationSpeed);
 
-		if (this.input.hasForwardMovement() && yaw > yawToRun) { // Wall Running
+		if (wallRunning && this.input.hasForwardMovement() && yaw > yawToRun) { // Wall Running
 			System.out.println("RUN");
 			motionY = 0.0;
 			motionX = motion.x;
 			motionZ = motion.z;
-		}else if (this.input.hasForwardMovement() && pitch > pitchToClimb) { // Wall Climbing
+		}else if (wallClimbing && this.input.hasForwardMovement() && pitch > pitchToClimb) { // Wall Climbing
 			System.out.println("CLIMB");
 			motionY = climbingSpeed;
-		} else if (motionY < 0.0 && this.isHoldingOntoLadder()) { //Shifting
+		} else if (wallSticking && motionY < 0.0 && this.isHoldingOntoLadder()) { //Shifting
 			System.out.println("STICK");
 			motionY = 0.0;
-		} else{ // Wall Sliding
+		} else if (wallSliding){ // Wall Sliding
 			System.out.println("SLIDE");
 			 motionY = Math.max(motion.y, -slidingSpeed);
 		}
 
-		if (stickyClimbing){
+		if (stickyMovement){
 			motionX *= ((north?1:0)+(south?1:0));
 			motionZ *= ((east?1:0)+(west?1:0));
 		}
