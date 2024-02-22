@@ -27,15 +27,17 @@ public class MobilityConfig extends MidnightConfig{
 	@Entry(category = "Wall") public static boolean wallSliding = true;
 	@Entry(category = "Wall") public static float slidingSpeed = 0.05F;
 	@Entry(category = "Wall") public static boolean wallClimbing = true;
-	@Entry(category = "Wall") public static float pitchToClimb = 0.0F;
+
 	@Entry(category = "Wall") public static float climbingSpeed = 0.05F;
+	@Entry(category = "Wall") public static float pitchToClimb = 0.0F;
 	@Entry(category = "Wall") public static boolean wallRunning = true;
+	@Entry(category = "Wall") public static float wallRunSlidingSpeed = 0.0F;
 	@Entry(category = "Wall") public static float yawToRun = 50.0F;
 	@Entry(category = "Wall") public static boolean stickyMovement = true;
 	@Entry(category = "Wall") public static float translationSpeed = 0.05F;
 	@Entry(category = "Wall") public static boolean wallSticking = true;
 	@Entry(category = "Wall") public static boolean wallJumping = true;
-	@Entry(category = "Wall") public static int wallJumpingTime = 10;
+
 
 	// Experimental Settings
 	@Entry(category = "?") public static float boatStepHeight = 0.0F;

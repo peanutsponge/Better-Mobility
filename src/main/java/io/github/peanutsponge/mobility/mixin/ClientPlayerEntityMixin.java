@@ -128,18 +128,26 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 		if (this.isClimbing())
 			this.setVelocity(this.applyClimbingSpeed(this.getVelocity()));
 
-		else if (wallMovement && !this.isSpectator() && !this.isOnGround())
-			this.setVelocity(this.applySlidingSpeed(this.getVelocity()));
+		else if (wallMovement && !this.isSpectator())
+			this.setVelocity(this.applyWallMovement(this.getVelocity()));
 
 		this.move(MovementType.SELF, this.getVelocity());
 
 		return this.getVelocity();
 	}
-	@Unique private int onWallTime = 0;
+	@Unique private boolean canWallJump = false;
+	@Unique private boolean isWalling = false;
 	@Unique
-	private Vec3d applySlidingSpeed(Vec3d motion) {
+	private Vec3d applyWallMovement(Vec3d motion) {
+		if (this.isOnGround()){
+			this.isWalling = false;
+			this.canWallJump = false;
+			return motion;
+		}
+
 		BlockPos blockPos = this.getBlockPos().up();
 		World world = this.getWorld();
+
 		double dx = (double)blockPos.getX() + 0.5 - this.getX();
 		double dz = (double)blockPos.getZ() + 0.5 - this.getZ();
 		double threshold = (double)(this.getWidth() / 2.0F) - 0.1F - wallDistance - 1.0E-7;
@@ -150,32 +158,37 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 		boolean south = (world.isDirectionSolid( blockPos.south(),this, Direction.NORTH) && -dz > threshold);
 		int wallsTouching = (east?1:0)+(west?1:0)+(north?1:0)+(south?1:0);
 
+		if (wallsTouching == 0 && isWalling){ //Start only using head, continue with feet.
+			blockPos = this.getBlockPos();
+			east = (world.isDirectionSolid( blockPos.east(),this, Direction.WEST) && -dx > threshold);
+			west = (world.isDirectionSolid( blockPos.west(),this, Direction.EAST) && dx > threshold);
+			north = (world.isDirectionSolid( blockPos.north(),this, Direction.SOUTH) && dz > threshold);
+			south = (world.isDirectionSolid( blockPos.south(),this, Direction.NORTH) && -dz > threshold);
+			wallsTouching = (east?1:0)+(west?1:0)+(north?1:0)+(south?1:0);
+		}
 
 		double motionX = motion.x;
 		double motionZ = motion.z;
 		double motionY = motion.y;
-		System.out.println(this.onWallTime);
+
 		if (!this.input.jumping || wallsTouching == 0) {
-			if (this.onWallTime > wallJumpingTime && wallJumping){// logic for when they let go of jump
-				System.out.println("JUMP");
-				this.onWallTime = 0;
+			if (wallJumping && this.isWalling && canWallJump) {// logic for when they let go of jump
 				float f = this.getYaw() * 0.017453292F;
 				if (this.isSprinting()) {
 					motionX += -MathHelper.sin(f) * sprintJumpHorizontalVelocityMultiplier;
 					motionZ += MathHelper.cos(f) * sprintJumpHorizontalVelocityMultiplier;
-				} else{
+				} else {
 					motionX += -MathHelper.sin(f) * jumpHorizontalVelocityMultiplier;
 					motionZ += MathHelper.cos(f) * jumpHorizontalVelocityMultiplier;
 				}
 				motionY += this.getJumpVelocity();
-//				motionX *= ((north?-1:1)*(south?-1:1));
-//				motionZ *= ((east?-1:1)*(west?-1:1));
+				this.isWalling = false;
 				return new Vec3d(motionX, motionY, motionZ);
 			}
-			this.onWallTime = 0;
+			this.canWallJump = false;
+			this.isWalling = false;
 			return motion;
 		}
-		this.onWallTime ++;
 
 
 
@@ -190,20 +203,23 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 		motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);
 		motionZ = MathHelper.clamp(motionZ, -translationSpeed, translationSpeed);
 
+		this.canWallJump = false;
+		this.isWalling = true;
 		if (wallRunning && this.input.hasForwardMovement() && yaw > yawToRun) { // Wall Running
-			System.out.println("RUN");
-			motionY = 0.0;
+			this.canWallJump = true;
+			motionY = Math.max(motion.y, -wallRunSlidingSpeed);
 			motionX = motion.x;
 			motionZ = motion.z;
 		}else if (wallClimbing && this.input.hasForwardMovement() && pitch > pitchToClimb) { // Wall Climbing
-			System.out.println("CLIMB");
 			motionY = climbingSpeed;
 		} else if (wallSticking && motionY < 0.0 && this.isHoldingOntoLadder()) { //Shifting
-			System.out.println("STICK");
+			this.canWallJump = true;
 			motionY = 0.0;
 		} else if (wallSliding){ // Wall Sliding
-			System.out.println("SLIDE");
 			 motionY = Math.max(motion.y, -slidingSpeed);
+		} else {
+			this.isWalling = false;
+			return motion;
 		}
 
 		if (stickyMovement){

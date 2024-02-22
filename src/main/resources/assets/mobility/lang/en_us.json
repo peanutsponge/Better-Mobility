@@ -26,10 +26,11 @@
   "mobility.midnightconfig.slidingSpeed": "Sliding Speed",
 
   "mobility.midnightconfig.wallClimbing": "Wall Climbing",
-  "mobility.midnightconfig.pitchToClimb": "Looking Angle for Climbing",
   "mobility.midnightconfig.climbingSpeed": "Climbing Speed",
+  "mobility.midnightconfig.pitchToClimb": "Looking Angle for Climbing",
 
   "mobility.midnightconfig.wallRunning": "wallRunning",
+  "mobility.midnightconfig.wallRunSlidingSpeed": "Wall Run Sliding Speed",
   "mobility.midnightconfig.yawToRun": "Minimum Angle for Wall Running",
 
   "mobility.midnightconfig.stickyMovement": "Don't fall while wall moving",
