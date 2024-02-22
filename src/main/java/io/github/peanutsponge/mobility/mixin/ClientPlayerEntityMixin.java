@@ -135,7 +135,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 
 		return this.getVelocity();
 	}
-	@Unique private boolean isWallMoving = false;
+	@Unique private int onWallTime = 0;
 	@Unique
 	private Vec3d applySlidingSpeed(Vec3d motion) {
 		BlockPos blockPos = this.getBlockPos().up();
@@ -154,10 +154,11 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 		double motionX = motion.x;
 		double motionZ = motion.z;
 		double motionY = motion.y;
-
+		System.out.println(this.onWallTime);
 		if (!this.input.jumping || wallsTouching == 0) {
-			if (this.isWallMoving && wallJumping){// logic for when they let go of jump
-				this.isWallMoving = false;
+			if (this.onWallTime > wallJumpingTime && wallJumping){// logic for when they let go of jump
+				System.out.println("JUMP");
+				this.onWallTime = 0;
 				float f = this.getYaw() * 0.017453292F;
 				if (this.isSprinting()) {
 					motionX += -MathHelper.sin(f) * sprintJumpHorizontalVelocityMultiplier;
@@ -167,14 +168,14 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 					motionZ += MathHelper.cos(f) * jumpHorizontalVelocityMultiplier;
 				}
 				motionY += this.getJumpVelocity();
-				motionX *= ((north?-1:1)*(south?-1:1));
-				motionZ *= ((east?-1:1)*(west?-1:1));
+//				motionX *= ((north?-1:1)*(south?-1:1));
+//				motionZ *= ((east?-1:1)*(west?-1:1));
 				return new Vec3d(motionX, motionY, motionZ);
 			}
-			this.isWallMoving = false;
+			this.onWallTime = 0;
 			return motion;
 		}
-		this.isWallMoving = true;
+		this.onWallTime ++;
 
 
 
@@ -182,11 +183,8 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 		float yaw = this.getYaw();
 		float pitch = this.getPitch() * -1;
 		yaw += (90.0F * ((east?1:0)-(west?1:0) + (north?(east?2:-2):0)) / wallsTouching);
-		System.out.println("yaw_adjust: " + yaw);
 		yaw = MathHelper.wrapDegrees(yaw);
-		System.out.println("yaw_wrapped: " + yaw);
 		yaw = Math.abs(yaw);
-		System.out.println("yaw_abs: " + yaw);
 
 
 		motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);

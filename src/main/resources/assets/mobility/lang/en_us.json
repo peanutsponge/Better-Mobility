@@ -1,0 +1,47 @@
+{
+  "mobility.midnightconfig.title":"I am a title",
+
+  "mobility.midnightconfig.category.Jumping": "Jumping",
+  "mobility.midnightconfig.jumpStrength": "Jump Strength",
+  "mobility.midnightconfig.coyoteTime": "Coyote Time",
+  "mobility.midnightconfig.smoothJumps": "Jumps Smoothly Onto Blocks",
+  "mobility.midnightconfig.jumpHorizontalVelocityMultiplier": "Jump Horizontal Velocity Multiplier",
+  "mobility.midnightconfig.sprintJumpHorizontalVelocityMultiplier": "Sprint Jump Horizontal Velocity Multiplier",
+
+  "mobility.midnightconfig.category.Walking": "Walking",
+  "mobility.midnightconfig.alwaysSprint": "Sprint Always",
+  "mobility.midnightconfig.sidewaysSprint": "Sprint Sideways",
+  "mobility.midnightconfig.backwardsSprint": "Sprint Backwards",
+  "mobility.midnightconfig.defaultGenericMovementSpeed": "Default Movement Speed",
+  "mobility.midnightconfig.sprintMovementSpeedMultiplier": "Sprint Multiplier",
+  "mobility.midnightconfig.stepHeight": "Step Height",
+
+
+
+  "mobility.midnightconfig.category.Wall": "Wall",
+  "mobility.midnightconfig.wallMovement": "General toggle",
+  "mobility.midnightconfig.wallDistance": "Distance to wall",
+
+  "mobility.midnightconfig.wallSliding": "Wall Sliding",
+  "mobility.midnightconfig.slidingSpeed": "Sliding Speed",
+
+  "mobility.midnightconfig.wallClimbing": "Wall Climbing",
+  "mobility.midnightconfig.pitchToClimb": "Looking Angle for Climbing",
+  "mobility.midnightconfig.climbingSpeed": "Climbing Speed",
+
+  "mobility.midnightconfig.wallRunning": "wallRunning",
+  "mobility.midnightconfig.yawToRun": "Minimum Angle for Wall Running",
+
+  "mobility.midnightconfig.stickyMovement": "Don't fall while wall moving",
+  "mobility.midnightconfig.translationSpeed": "Speed Along Wall",
+
+  "mobility.midnightconfig.wallSticking": "Wall Sticking",
+  "mobility.midnightconfig.wallJumping": "Wall Jumping",
+  "mobility.midnightconfig.wallJumpingTime": "Delay before Wall Jump",
+
+
+  "mobility.midnightconfig.category.?": "?",
+  "mobility.midnightconfig.boatStepHeight": "boatStepHeight",
+  "mobility.midnightconfig.hasDrag": "Drag",
+  "mobility.midnightconfig.hasGravity": "Gravity"
+}

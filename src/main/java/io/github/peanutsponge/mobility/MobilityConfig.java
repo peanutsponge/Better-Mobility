@@ -24,21 +24,22 @@ public class MobilityConfig extends MidnightConfig{
 	@Entry(category = "Wall") public static boolean wallMovement = false;
 
 	@Entry(category = "Wall") public static float wallDistance = 0.05F;
-	@Entry(category = "Wall") public static boolean wallSliding = false;
+	@Entry(category = "Wall") public static boolean wallSliding = true;
 	@Entry(category = "Wall") public static float slidingSpeed = 0.05F;
-	@Entry(category = "Wall") public static boolean wallClimbing = false;
+	@Entry(category = "Wall") public static boolean wallClimbing = true;
 	@Entry(category = "Wall") public static float pitchToClimb = 0.0F;
 	@Entry(category = "Wall") public static float climbingSpeed = 0.05F;
-	@Entry(category = "Wall") public static boolean wallRunning = false;
+	@Entry(category = "Wall") public static boolean wallRunning = true;
 	@Entry(category = "Wall") public static float yawToRun = 50.0F;
 	@Entry(category = "Wall") public static boolean stickyMovement = true;
 	@Entry(category = "Wall") public static float translationSpeed = 0.05F;
-	@Entry(category = "Wall") public static boolean wallSticking = false;
-	@Entry(category = "Wall") public static boolean wallJumping = false;
+	@Entry(category = "Wall") public static boolean wallSticking = true;
+	@Entry(category = "Wall") public static boolean wallJumping = true;
+	@Entry(category = "Wall") public static int wallJumpingTime = 10;
 
 	// Experimental Settings
-	@Entry(category = "Experimental") public static float boatStepHeight = 0.0F;
-	@Entry(category = "Experimental") public static boolean hasDrag = true;
-	@Entry(category = "Experimental") public static boolean hasGravity = true;
+	@Entry(category = "?") public static float boatStepHeight = 0.0F;
+	@Entry(category = "?") public static boolean hasDrag = true;
+	@Entry(category = "?") public static boolean hasGravity = true;
 
 }
