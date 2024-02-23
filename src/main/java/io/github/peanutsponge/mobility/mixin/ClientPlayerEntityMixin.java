@@ -167,66 +167,65 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 			wallsTouching = (east?1:0)+(west?1:0)+(north?1:0)+(south?1:0);
 		}
 
-		double motionX = motion.x;
-		double motionZ = motion.z;
-		double motionY = motion.y;
-
-		if (!this.input.jumping || wallsTouching == 0) {
-			if (wallJumping && this.isWalling && canWallJump) {// logic for when they let go of jump
-				float f = this.getYaw() * 0.017453292F;
-				if (this.isSprinting()) {
-					motionX += -MathHelper.sin(f) * sprintJumpHorizontalVelocityMultiplier;
-					motionZ += MathHelper.cos(f) * sprintJumpHorizontalVelocityMultiplier;
-				} else {
-					motionX += -MathHelper.sin(f) * jumpHorizontalVelocityMultiplier;
-					motionZ += MathHelper.cos(f) * jumpHorizontalVelocityMultiplier;
-				}
-				motionY += this.getJumpVelocity();
-				this.isWalling = false;
-				return new Vec3d(motionX, motionY, motionZ);
-			}
-			this.canWallJump = false;
-			this.isWalling = false;
-			return motion;
-		}
-
-
-
-
 		float yaw = this.getYaw();
 		float pitch = this.getPitch() * -1;
 		yaw += (90.0F * ((east?1:0)-(west?1:0) + (north?(east?2:-2):0)) / wallsTouching);
 		yaw = MathHelper.wrapDegrees(yaw);
 		yaw = Math.abs(yaw);
 
+		double motionX = motion.x;
+		double motionZ = motion.z;
+		double motionY = motion.y;
 
-		motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);
-		motionZ = MathHelper.clamp(motionZ, -translationSpeed, translationSpeed);
+		if (this.isWalling && this.canWallJump && ((wallJumping && !this.input.jumping && yaw > minimumYawToJump) || (jumpOnLeavingWall && wallsTouching == 0))) {// Do a wall jump
+			float f = this.getYaw() * 0.017453292F;
+			motionX += -MathHelper.sin(f) * wallJumpVelocityMultiplier;
+			motionZ += MathHelper.cos(f) * wallJumpVelocityMultiplier;
+			motionY += wallJumpHeight * this.getJumpVelocityMultiplier() + this.getJumpBoostVelocityModifier();
+			this.isWalling = false;
+			this.canWallJump = false;
+			this.slidingPos = Optional.of(this.getBlockPos());
+			this.resetFallDistance();
+			return new Vec3d(motionX, motionY, motionZ);
+		}
+
+		if (wallsTouching == 0 || ((!this.input.jumping || !this.input.hasForwardMovement()) && !this.isHoldingOntoLadder())) { // Stop all wall movement
+			this.canWallJump = false;
+			this.isWalling = false;
+			return motion;
+		}
+
 
 		this.canWallJump = false;
 		this.isWalling = true;
-		if (wallRunning && this.input.hasForwardMovement() && yaw > yawToRun) { // Wall Running
+		if (wallRunning && yaw > yawToRun) { // Wall Running
 			this.canWallJump = true;
 			motionY = Math.max(motion.y, -wallRunSlidingSpeed);
-			motionX = motion.x;
-			motionZ = motion.z;
-		}else if (wallClimbing && this.input.hasForwardMovement() && pitch > pitchToClimb) { // Wall Climbing
+			motionX = motion.x + wallRunSpeedBonus;
+			motionZ = motion.z + wallRunSpeedBonus;
+		}else if (wallClimbing && pitch > pitchToClimb) { // Wall Climbing
 			motionY = climbingSpeed;
+			motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);
+			motionZ = MathHelper.clamp(motionZ, -translationSpeed, translationSpeed);
 		} else if (wallSticking && motionY < 0.0 && this.isHoldingOntoLadder()) { //Shifting
 			this.canWallJump = true;
 			motionY = 0.0;
+			motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);
+			motionZ = MathHelper.clamp(motionZ, -translationSpeed, translationSpeed);
 		} else if (wallSliding){ // Wall Sliding
-			 motionY = Math.max(motion.y, -slidingSpeed);
+			motionY = Math.max(motion.y, -slidingSpeed);
+			motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);
+			motionZ = MathHelper.clamp(motionZ, -translationSpeed, translationSpeed);
 		} else {
 			this.isWalling = false;
 			return motion;
 		}
 
-		if (stickyMovement){
+		if (stickyMovement){ // Disable falling off the wall accidentally
 			motionX *= ((north?1:0)+(south?1:0));
 			motionZ *= ((east?1:0)+(west?1:0));
 		}
-
+		this.slidingPos = Optional.of(this.getBlockPos());
 		this.resetFallDistance();
 		return new Vec3d(motionX, motionY, motionZ);
 	}
