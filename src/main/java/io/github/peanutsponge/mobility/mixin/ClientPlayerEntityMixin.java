@@ -1,7 +1,9 @@
 package io.github.peanutsponge.mobility.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReceiver;
 import com.mojang.authlib.GameProfile;
-import net.minecraft.block.*;
+import net.minecraft.block.Blocks;
+import net.minecraft.block.PowderSnowBlock;
 import net.minecraft.client.input.Input;
 import net.minecraft.client.network.ClientPlayerEntity;
 import net.minecraft.entity.MovementType;
@@ -13,8 +15,6 @@ import net.minecraft.util.math.*;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.*;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -22,12 +22,22 @@ import java.util.UUID;
 import static io.github.peanutsponge.mobility.MobilityConfig.*;
 
 
-@Mixin(value = ClientPlayerEntity.class)
+@Mixin(value = ClientPlayerEntity.class, priority = 999)
 public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 
 	public ClientPlayerEntityMixin(World world, BlockPos pos, float yaw, GameProfile gameProfile) {
 		super(world, pos, yaw, gameProfile);
 	}
+	@Shadow private boolean canSprint(){return true;}
+	@Shadow private boolean canStartSprinting() {return true;}
+	@Shadow public Input input;
+
+	@Shadow
+	public abstract float getYaw(float tickDelta);
+
+	@Shadow
+	public abstract float getPitch(float tickDelta);
+
 	/**
 	 * Executes a jump.
 	 * Edited s.t. variables can be configured
@@ -52,26 +62,6 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
         return jumpStrength * this.getJumpVelocityMultiplier() + this.getJumpBoostVelocityModifier();
     }
 
-
-	@Shadow private boolean canSprint(){return true;}
-	@Shadow private boolean canStartSprinting() {return true;}
-	@Shadow public Input input;
-
-	@Shadow
-	public abstract float getYaw(float tickDelta);
-
-	@Shadow
-	public abstract float getPitch(float tickDelta);
-
-	/**
-	 * Allows sideways sprinting
-	 * @author peanutsponge
-	 * @reason simplest implementation
-	 */
-	@Overwrite
-	private boolean isWalking() {
-		return this.input.forwardMovement > 1.0E-5F || (Math.abs(this.input.sidewaysMovement) > 1.0E-5F && this.input.forwardMovement > -1.0E-5F&& sidewaysSprint) || (this.input.forwardMovement < -1.0E-5F && backwardsSprint);
-	}
     @Override
 	public void travel(Vec3d movementInput){
 		this.horizontalCollision = false;
@@ -86,6 +76,11 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
         this.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED).setBaseValue((double) this.getAbilities().getWalkSpeed());
 		super.travel(movementInput);
     }
+
+	@Unique
+	private boolean isWalking2() {
+		return this.input.forwardMovement > 1.0E-5F || (Math.abs(this.input.sidewaysMovement) > 1.0E-5F && this.input.forwardMovement > -1.0E-5F&& sidewaysSprint) || (this.input.forwardMovement < -1.0E-5F && backwardsSprint);
+	}
 	/**
 	 * Sets sprinting to boolean.
 	 * Edited s.t. sprinting multiplier can be configured.
@@ -93,27 +88,23 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 	 */
 	@Override
 	public void setSprinting(boolean sprinting) {
-		if (this.blockSprintingBlock) {
-			this.blockSprintingBlock = false;
-			return;
-		}
 		super.setSprinting(sprinting);
 		EntityAttributeInstance entityAttributeInstance = this.getAttributeInstance(EntityAttributes.GENERIC_MOVEMENT_SPEED);
 		EntityAttributeModifier SPRINTING_SPEED_BOOST = new EntityAttributeModifier(UUID.fromString("662A6B8D-DA3E-4C1C-8813-96EA6097278D"), "Sprinting speed boost", sprintMovementSpeedMultiplier, EntityAttributeModifier.Operation.MULTIPLY_TOTAL);
-		entityAttributeInstance.removeModifier(SPRINTING_SPEED_BOOST.getId());
+        entityAttributeInstance.removeModifier(SPRINTING_SPEED_BOOST.getId());
 		if (sprinting) {
 			entityAttributeInstance.addTemporaryModifier(SPRINTING_SPEED_BOOST);
 		}
 	}
-	@Unique
-	private boolean blockSprintingBlock = false;
-	@Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 2))
-	private void removeSprintingLogic(CallbackInfo info) {
-		this.blockSprintingBlock = this.isWalking() && this.canSprint();
-	}
-	@Inject(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V", ordinal = 3))
-	private void removeSprintingLogic2(CallbackInfo info) {
-		this.blockSprintingBlock = this.isWalking() && this.canSprint();
+	/**
+	 * Removes sprinting loss on collision, strafing, and more.
+	 */
+	@ModifyReceiver(method = "tickMovement", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/network/ClientPlayerEntity;setSprinting(Z)V"))
+	private ClientPlayerEntity removeSprintingLogic(ClientPlayerEntity clientPlayerEntity, boolean sprinting) {
+		if (sprinting || !this.isWalking2() || !this.canSprint()){
+			this.setSprinting(sprinting);
+		}
+		return clientPlayerEntity;
 	}
 
 
@@ -135,6 +126,11 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 
 		return this.getVelocity();
 	}
+	@Unique
+	private float getMovementSpeed(float slipperiness) {
+		return this.isOnGround() ? this.getMovementSpeed() * (0.21600002F / (slipperiness * slipperiness * slipperiness)) : this.getAirSpeed();
+	}
+
 	@Unique private boolean isWalling = false;
 	@Unique
 	private Vec3d applyWallMovement(Vec3d motion) {
@@ -252,10 +248,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 		return this.slidingPos;
 	}
 
-	@Unique
-	private float getMovementSpeed(float slipperiness) {
-		return this.isOnGround() ? this.getMovementSpeed() * (0.21600002F / (slipperiness * slipperiness * slipperiness)) : this.getAirSpeed();
-	}
+
 	/**
 	 * Experimental settings
 	 */
