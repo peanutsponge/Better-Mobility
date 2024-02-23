@@ -1,5 +1,5 @@
 {
-  "mobility.midnightconfig.title":"I am a title",
+  "mobility.midnightconfig.title":"Movement Settings",
 
   "mobility.midnightconfig.category.Jumping": "Jumping",
   "mobility.midnightconfig.jumpStrength": "Jump Strength",
@@ -19,29 +19,42 @@
 
 
   "mobility.midnightconfig.category.Wall": "Wall",
+  "mobility.midnightconfig.commentGeneral": "Wall Movement Settings",
+  "mobility.midnightconfig.commentGeneral2": "Walls are all solid block-faces, not to be confused with wall blocks",
+
   "mobility.midnightconfig.wallMovement": "General toggle",
   "mobility.midnightconfig.wallDistance": "Distance to wall",
+  "mobility.midnightconfig.stickyMovement": "Don't fall while wall moving",
 
+  "mobility.midnightconfig.commentSliding": "Wall Sliding",
   "mobility.midnightconfig.wallSliding": "Wall Sliding",
   "mobility.midnightconfig.slidingSpeed": "Sliding Speed",
 
+  "mobility.midnightconfig.commentSticking": "Wall Sticking",
+  "mobility.midnightconfig.wallSticking": "Wall Sticking On Shift",
+
+  "mobility.midnightconfig.commentClimbing": "Wall Climbing",
   "mobility.midnightconfig.wallClimbing": "Wall Climbing",
   "mobility.midnightconfig.climbingSpeed": "Climbing Speed",
   "mobility.midnightconfig.pitchToClimb": "Looking Angle for Climbing",
 
-  "mobility.midnightconfig.wallRunning": "wallRunning",
+  "mobility.midnightconfig.commentRunning": "Wall Running",
+  "mobility.midnightconfig.wallRunning": "Wall Running",
   "mobility.midnightconfig.wallRunSlidingSpeed": "Wall Run Sliding Speed",
-  "mobility.midnightconfig.yawToRun": "Minimum Angle for Wall Running",
+  "mobility.midnightconfig.wallRunSpeedBonus": "Wall Run Speed Boost",
+  "mobility.midnightconfig.minimumWallRunSpeed": "Minimum Speed For Wall Running",
+  "mobility.midnightconfig.yawToRun": "Minimum Angle For Wall Running",
 
-  "mobility.midnightconfig.stickyMovement": "Don't fall while wall moving",
-  "mobility.midnightconfig.translationSpeed": "Speed Along Wall",
-
-  "mobility.midnightconfig.wallSticking": "Wall Sticking",
+  "mobility.midnightconfig.commentJumping": "Wall Jumping",
   "mobility.midnightconfig.wallJumping": "Wall Jumping",
-  "mobility.midnightconfig.wallJumpingTime": "Delay before Wall Jump",
+  "mobility.midnightconfig.minimumYawToJump": "Minimum Angle To Wall Jump",
+  "mobility.midnightconfig.wallJumpVelocityMultiplier": "Horizontal Velocity Boost On Wall Jump",
+  "mobility.midnightconfig.wallJumpHeight": "Jump Height On Wall Jump",
+  "mobility.midnightconfig.jumpOnLeavingWall": "Automatically Wall Jump When Leaving A Wall",
 
 
-  "mobility.midnightconfig.category.?": "?",
+
+  "mobility.midnightconfig.category.Z?": "Z?",
   "mobility.midnightconfig.boatStepHeight": "boatStepHeight",
   "mobility.midnightconfig.hasDrag": "Drag",
   "mobility.midnightconfig.hasGravity": "Gravity"

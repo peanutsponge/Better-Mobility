@@ -135,13 +135,11 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 
 		return this.getVelocity();
 	}
-	@Unique private boolean canWallJump = false;
 	@Unique private boolean isWalling = false;
 	@Unique
 	private Vec3d applyWallMovement(Vec3d motion) {
 		if (this.isOnGround()){
 			this.isWalling = false;
-			this.canWallJump = false;
 			return motion;
 		}
 
@@ -177,45 +175,40 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 		double motionZ = motion.z;
 		double motionY = motion.y;
 
-		if (this.isWalling && this.canWallJump && ((wallJumping && !this.input.jumping && yaw > minimumYawToJump) || (jumpOnLeavingWall && wallsTouching == 0))) {// Do a wall jump
+		if (this.isWalling && ((wallJumping && !this.input.jumping && yaw > minimumYawToJump) || (jumpOnLeavingWall && wallsTouching == 0))) {// Do a wall jump
 			float f = this.getYaw() * 0.017453292F;
 			motionX += -MathHelper.sin(f) * wallJumpVelocityMultiplier;
 			motionZ += MathHelper.cos(f) * wallJumpVelocityMultiplier;
 			motionY += wallJumpHeight * this.getJumpVelocityMultiplier() + this.getJumpBoostVelocityModifier();
 			this.isWalling = false;
-			this.canWallJump = false;
 			this.slidingPos = Optional.of(this.getBlockPos());
 			this.resetFallDistance();
 			return new Vec3d(motionX, motionY, motionZ);
 		}
 
 		if (wallsTouching == 0 || ((!this.input.jumping || !this.input.hasForwardMovement()) && !this.isHoldingOntoLadder())) { // Stop all wall movement
-			this.canWallJump = false;
 			this.isWalling = false;
 			return motion;
 		}
 
 
-		this.canWallJump = false;
 		this.isWalling = true;
-		if (wallRunning && yaw > yawToRun) { // Wall Running
-			this.canWallJump = true;
+		if (wallRunning && yaw > yawToRun && (Math.abs(motionX) > minimumWallRunSpeed|| Math.abs(motionZ) > minimumWallRunSpeed)) { // Wall Running
 			motionY = Math.max(motion.y, -wallRunSlidingSpeed);
-			motionX = motion.x + wallRunSpeedBonus;
-			motionZ = motion.z + wallRunSpeedBonus;
+			motionX = motion.x * (1 + wallRunSpeedBonus);
+			motionZ = motion.z * (1 + wallRunSpeedBonus);
 		}else if (wallClimbing && pitch > pitchToClimb) { // Wall Climbing
 			motionY = climbingSpeed;
-			motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);
-			motionZ = MathHelper.clamp(motionZ, -translationSpeed, translationSpeed);
+			motionX = MathHelper.clamp(motionX, -climbingSpeed, climbingSpeed);
+			motionZ = MathHelper.clamp(motionZ, -climbingSpeed, climbingSpeed);
 		} else if (wallSticking && motionY < 0.0 && this.isHoldingOntoLadder()) { //Shifting
-			this.canWallJump = true;
 			motionY = 0.0;
-			motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);
-			motionZ = MathHelper.clamp(motionZ, -translationSpeed, translationSpeed);
+			motionX = MathHelper.clamp(motionX, -climbingSpeed, climbingSpeed);
+			motionZ = MathHelper.clamp(motionZ, -climbingSpeed, climbingSpeed);
 		} else if (wallSliding){ // Wall Sliding
 			motionY = Math.max(motion.y, -slidingSpeed);
-			motionX = MathHelper.clamp(motionX, -translationSpeed, translationSpeed);
-			motionZ = MathHelper.clamp(motionZ, -translationSpeed, translationSpeed);
+			motionX = MathHelper.clamp(motionX, -climbingSpeed, climbingSpeed);
+			motionZ = MathHelper.clamp(motionZ, -climbingSpeed, climbingSpeed);
 		} else {
 			this.isWalling = false;
 			return motion;
