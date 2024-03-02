@@ -119,7 +119,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 	public Vec3d handleFrictionAndCalculateMovement(Vec3d movementInput, float slipperiness) {
 		this.updateVelocity(this.getMovementSpeed(slipperiness), movementInput);
 
-		if (this.isClimbing())
+		if (super.isClimbing())
 			this.setVelocity(this.applyClimbingSpeed(this.getVelocity()));
 
 		else if (wallMovement && !this.isSpectator())
@@ -188,7 +188,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 			return new Vec3d(motionX, motionY, motionZ);
 		}
 
-		if (wallsTouching == 0 || !this.input.jumping) { // Stop all wall movement
+		if (wallsTouching == 0 || !this.input.jumping || (yaw > 90 && !this.isWalling)) { // Stop all wall movement
 			this.isWalling = false;
 			return motion;
 		}
@@ -199,7 +199,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 			motionY = Math.max(motion.y, -wallRunSlidingSpeed);
 			motionX = motion.x * (1 + wallRunSpeedBonus);
 			motionZ = motion.z * (1 + wallRunSpeedBonus);
-		}else if (wallClimbing && pitch > pitchToClimb && this.input.hasForwardMovement()) { // Wall Climbing
+		}else if (wallClimbing && pitch > pitchToClimb && yaw < 90 && this.input.hasForwardMovement()) { // Wall Climbing
 			motionY = climbingSpeed;
 			motionX = MathHelper.clamp(motionX, -climbingSpeed, climbingSpeed);
 			motionZ = MathHelper.clamp(motionZ, -climbingSpeed, climbingSpeed);
@@ -207,7 +207,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 			motionY = 0.0;
 			motionX = MathHelper.clamp(motionX, -climbingSpeed, climbingSpeed);
 			motionZ = MathHelper.clamp(motionZ, -climbingSpeed, climbingSpeed);
-		} else if (wallSliding && this.input.hasForwardMovement()){ // Wall Sliding
+		} else if (wallSliding){ // Wall Sliding
 			motionY = Math.max(motion.y, -slidingSpeed);
 			motionX = MathHelper.clamp(motionX, -climbingSpeed, climbingSpeed);
 			motionZ = MathHelper.clamp(motionZ, -climbingSpeed, climbingSpeed);
@@ -253,7 +253,10 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 			return super.getClimbingPos();
 		return this.slidingPos;
 	}
-
+	@Override
+	public boolean isClimbing() {
+		return super.isClimbing() || this.isWalling;
+	}
 
 	/**
 	 * Experimental settings
