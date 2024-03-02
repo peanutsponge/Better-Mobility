@@ -38,6 +38,9 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 	@Shadow
 	public abstract float getPitch(float tickDelta);
 
+	@Shadow
+	public abstract boolean isHoldingOntoLadder();
+
 	/**
 	 * Executes a jump.
 	 * Edited s.t. variables can be configured
@@ -128,10 +131,13 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 	}
 	@Unique
 	private float getMovementSpeed(float slipperiness) {
-		return this.isOnGround() ? this.getMovementSpeed() * (0.21600002F / (slipperiness * slipperiness * slipperiness)) : this.getAirSpeed();
+		return (this.isOnGround()) ? this.getMovementSpeed() * (0.21600002F / (slipperiness * slipperiness * slipperiness)) : this.getAirSpeed();
 	}
 
 	@Unique private boolean isWalling = false;
+	/**
+	 * Overrides the default friction behavior to add wall sliding, wall running, wall climbing, and wall sticking.
+	 */
 	@Unique
 	private Vec3d applyWallMovement(Vec3d motion) {
 		if (this.isOnGround()){
@@ -182,18 +188,18 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 			return new Vec3d(motionX, motionY, motionZ);
 		}
 
-		if (wallsTouching == 0 || ((!this.input.jumping || !this.input.hasForwardMovement()) && !this.isHoldingOntoLadder())) { // Stop all wall movement
+		if (wallsTouching == 0 || !this.input.jumping) { // Stop all wall movement
 			this.isWalling = false;
 			return motion;
 		}
 
 
 		this.isWalling = true;
-		if (wallRunning && yaw > yawToRun && (Math.abs(motionX) > minimumWallRunSpeed|| Math.abs(motionZ) > minimumWallRunSpeed)) { // Wall Running
+		if (wallRunning && this.input.hasForwardMovement() && yaw > yawToRun && (Math.abs(motionX) > minimumWallRunSpeed|| Math.abs(motionZ) > minimumWallRunSpeed)) { // Wall Running
 			motionY = Math.max(motion.y, -wallRunSlidingSpeed);
 			motionX = motion.x * (1 + wallRunSpeedBonus);
 			motionZ = motion.z * (1 + wallRunSpeedBonus);
-		}else if (wallClimbing && pitch > pitchToClimb) { // Wall Climbing
+		}else if (wallClimbing && pitch > pitchToClimb && this.input.hasForwardMovement()) { // Wall Climbing
 			motionY = climbingSpeed;
 			motionX = MathHelper.clamp(motionX, -climbingSpeed, climbingSpeed);
 			motionZ = MathHelper.clamp(motionZ, -climbingSpeed, climbingSpeed);
@@ -201,7 +207,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 			motionY = 0.0;
 			motionX = MathHelper.clamp(motionX, -climbingSpeed, climbingSpeed);
 			motionZ = MathHelper.clamp(motionZ, -climbingSpeed, climbingSpeed);
-		} else if (wallSliding){ // Wall Sliding
+		} else if (wallSliding && this.input.hasForwardMovement()){ // Wall Sliding
 			motionY = Math.max(motion.y, -slidingSpeed);
 			motionX = MathHelper.clamp(motionX, -climbingSpeed, climbingSpeed);
 			motionZ = MathHelper.clamp(motionZ, -climbingSpeed, climbingSpeed);
@@ -240,7 +246,7 @@ public abstract class ClientPlayerEntityMixin extends PlayerEntity {
 	 * Used in fall damage calculations, probably currently broken
 	 */
 	@Unique
-	private Optional<BlockPos> slidingPos;
+	private Optional<BlockPos> slidingPos = Optional.empty();
 	@Override
 	public Optional<BlockPos> getClimbingPos() {
 		if (this.slidingPos.isEmpty())

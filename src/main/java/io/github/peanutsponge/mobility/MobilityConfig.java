@@ -58,7 +58,7 @@ public class MobilityConfig extends MidnightConfig{
 	@Entry(category = "Wall") public static float wallJumpVelocityMultiplier = 0.2F;
 	@Entry(category = "Wall") public static float wallJumpHeight = 0.42F;
 	@Entry(category = "Wall", min = 0.0F, max = 180.0F) public static float minimumYawToJump = 91.0F;
-	@Entry(category = "Wall") public static boolean jumpOnLeavingWall = true;
+	@Entry(category = "Wall") public static boolean jumpOnLeavingWall = false;
 	/**
 	 * Experimental settings
 	 */
