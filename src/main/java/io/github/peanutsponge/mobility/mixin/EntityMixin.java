@@ -14,10 +14,12 @@ import static io.github.peanutsponge.mobility.MobilityConfig.smoothJumps;
 
 @Mixin(value = Entity.class)
 public abstract class EntityMixin {
-	@Shadow boolean onGround;
-	@Unique boolean realOnGround;
+	@Shadow
+	private boolean onGround;
+	@Unique
+	boolean realOnGround;
 	@Inject(method = "adjustMovementForCollisions", at = @At("HEAD"))
-	void allowJumpStep(Vec3d movement, CallbackInfoReturnable<Vec3d> cir) {
+	void allowJumpStepHead(Vec3d movement, CallbackInfoReturnable<Vec3d> cir) {
 		this.realOnGround = this.onGround;
 		this.onGround |= smoothJumps;
 	}

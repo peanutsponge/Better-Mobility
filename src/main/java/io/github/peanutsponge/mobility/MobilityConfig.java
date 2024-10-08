@@ -18,7 +18,7 @@ public class MobilityConfig extends MidnightConfig{
 	 * Jump settings
 	 */
 	@Entry(category = "Jumping") public static float jumpStrength = 0.42F;
-	@Entry(category = "Jumping") public static int coyoteTime = 10;
+	@Entry(category = "Jumping") public static int coyoteTime = 0;
 
 	@Entry(category = "Jumping") public static boolean smoothJumps = false;
 	@Entry(category = "Jumping") public static float jumpHorizontalVelocityMultiplier = 0.0F;
@@ -59,11 +59,4 @@ public class MobilityConfig extends MidnightConfig{
 	@Entry(category = "Wall") public static float wallJumpHeight = 0.42F;
 	@Entry(category = "Wall", min = 0.0F, max = 180.0F) public static float minimumYawToJump = 91.0F;
 	@Entry(category = "Wall") public static boolean jumpOnLeavingWall = false;
-	/**
-	 * Experimental settings
-	 */
-	@Entry(category = "Z?") public static float boatStepHeight = 0.0F;
-	@Entry(category = "Z?") public static boolean hasDrag = true;
-	@Entry(category = "Z?") public static boolean hasGravity = true;
-
 }
